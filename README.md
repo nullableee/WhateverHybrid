@@ -18,9 +18,9 @@ The existing customized WhateverXe installation must be preserved. WhateverHybri
 - Intel / WhateverXe remains the display-owning GPU and drives the internal eDP panel and desktop.
 - NVIDIA / NullMoth provides a second Metal device for selected applications.
 - macOS system UI processes remain on the integrated GPU.
-- Per-process selection uses the driver's GPU policy mechanism, subject to activation and real-hardware validation.
+- The NVIDIA fork adds per-process policy activation in headless mode, so this policy can work without enabling the experimental framebuffer-transfer modes.
 
-This is distinct from the experimental nmhybrid=1..4 panel-transfer path. WhateverHybrid does not enable that path by default.
+This is distinct from nmhybrid=1..4 panel-transfer. WhateverHybrid does not enable those modes by default.
 
 ## Explicit exclusions
 
@@ -30,30 +30,32 @@ This is distinct from the experimental nmhybrid=1..4 panel-transfer path. Whatev
 - No replacement of the customized WhateverXe / WhateverXe Graphics installation.
 - No claim of working render offload until real hardware confirms Metal device enumeration, per-process selection, frame presentation and stability.
 
-## Version policy
+## Source pins
 
-The 2.9 release line is the final NullMoth release line documented for macOS 15 Sequoia and macOS 26 Tahoe. The repository pins the source checkout to the release changelog commit `3d8ffab7fd737bc175089b0bc21900abf9f38bec`, rather than assuming a tag name. The 3.0 line is not selected for this Tahoe target.
+- Upstream baseline: current 3.0 source snapshot at `87e524ab36f12d17c04626d6cf7fc3bde1cc63e`.
+- NVIDIA development fork: `b76d3df1da4bf2497c938c7d78ac221e307319b0`, which includes the headless+iGPU GPU-policy activation and desktop-process preference changes.
+- WhateverXe: preserve the already-installed customized build; source checkout is for inspection only.
 
-The user's NVIDIA fork is tracked separately for development; it is not silently substituted for the stable source. WhateverXe and its Graphics companion are treated as already installed, customized dependencies. Their versions and compatibility are checked before any future installation step; they are not updated automatically.
+The upstream 3.0 source installer explicitly accepts macOS 15 and 26. This repository pins source revisions rather than assuming an unverified release-tag name. The final install package and its checksum/signature still need to be verified before a system install is added.
 
 ## Current repository state
 
 This is the safe bootstrap stage:
 
 - `--check`: verifies host OS, architecture and required tools.
-- `--fetch-sources`: checks out the user's NVIDIA fork, pinned upstream 2.9 source and WhateverXe source for inspection.
+- `--fetch-sources`: checks out the user's NVIDIA fork, the upstream baseline and WhateverXe source for inspection.
 - `--status`: prints the configured integration policy.
 
 This stage does not install kexts or change system configuration.
 
 ## Next implementation gates
 
-1. Confirm the exact kernel-side activation mechanism for `debug.nvaccel_headless` in the selected driver source.
-2. Verify that the driver's GPU policy is active in headless+iGPU mode without NMIntelFB.
-3. Confirm package layout, signatures and release checksums for the 2.9 Tahoe package.
-4. Add a read-only hardware/provider audit for the Intel eDP owner and NVIDIA PCI device.
-5. Implement a staged installer with backup, explicit confirmation, rollback and post-install verification.
-6. Continue performance and compatibility work in the NVIDIA fork only after the basic offload path is validated.
+1. Build the NVIDIA fork from the pinned source revision and run its host test suite.
+2. Verify the headless detector sets `debug.nvaccel_headless` when the NVIDIA GPU has no display head and the Intel framebuffer owns the desktop.
+3. Verify the fork's policy code activates when `debug.nvaccel_headless > 0`, with no `nmhybrid` boot argument.
+4. Verify allow-list and per-process policy behavior: system UI stays on Intel; explicitly selected applications receive the RTX 4050 Metal device.
+5. Confirm package layout, signatures and checksums for macOS 26.
+6. Add a read-only hardware/provider audit, then a staged installer with backup, explicit confirmation, rollback and post-install verification.
 
 ## Usage
 
