@@ -11,6 +11,7 @@ WhateverHybrid — safe preparation utility
 Usage:
   ./whateverhybrid.sh --check
   ./whateverhybrid.sh --fetch-sources [--workdir PATH]
+  ./whateverhybrid.sh --test-driver [--workdir PATH]
   ./whateverhybrid.sh --status [--workdir PATH]
   ./whateverhybrid.sh --help
 This stage does not install kexts, change OpenCore/NVRAM, alter SIP/AMFI,
@@ -24,7 +25,7 @@ need_cmd() { command -v "$1" >/dev/null 2>&1 || stop "Required command not found
 parse_args() {
   while (($#)); do
     case "$1" in
-      --check|--fetch-sources|--status) [[ -z "$ACTION" ]] || stop "Choose exactly one action."; ACTION="$1" ;;
+      --check|--fetch-sources|--test-driver|--status) [[ -z "$ACTION" ]] || stop "Choose exactly one action."; ACTION="$1" ;;
       --workdir) (($# >= 2)) || stop "--workdir requires a path."; WORKDIR="$2"; shift ;;
       --help|-h) usage; exit 0 ;;
       *) stop "Unknown argument: $1" ;;
@@ -71,8 +72,20 @@ fetch_sources() {
   ok "Source checkouts prepared under $WORKDIR/sources"
   note "No driver package installed; no boot settings changed."
 }
+test_driver() {
+  preflight
+  local src="$WORKDIR/sources/nvidia-macos-driver-fork"
+  [[ -f "$src/tools/run_all_tests.py" ]] || stop "Run --fetch-sources first."
+  need_cmd python3
+  need_cmd xcode-select
+  need_cmd clang
+  python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 12) else 1)' || stop "Driver host tests require Python 3.12 or newer."
+  xcode-select -p >/dev/null 2>&1 || stop "Xcode Command Line Tools are not selected."
+  note "Running the fork's host test suite; no kexts are installed."
+  (cd "$src" && python3 tools/run_all_tests.py)
+}
 show_status() {
-  printf 'NVIDIA stable target: %s (%s)\n' "$WH_NVIDIA_UPSTREAM" "$WH_NVIDIA_UPSTREAM_REF"
+  printf 'NVIDIA upstream baseline: %s (%s)\n' "$WH_NVIDIA_UPSTREAM" "$WH_NVIDIA_UPSTREAM_REF"
   printf 'NVIDIA development fork: %s\n' "$WH_NVIDIA_FORK"
   printf 'WhateverXe: preserve installed customized build\n'
   printf 'NMIntelFB: disabled\nnmhybrid display transfer: disabled\n'
@@ -83,5 +96,6 @@ parse_args "$@"
 case "$ACTION" in
   --check) preflight ;;
   --fetch-sources) fetch_sources ;;
+  --test-driver) test_driver ;;
   --status) show_status ;;
 esac
