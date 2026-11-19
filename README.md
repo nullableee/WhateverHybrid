@@ -38,7 +38,7 @@ This is distinct from nmhybrid=1..4 panel-transfer. WhateverHybrid does not enab
 
 The upstream 3.0 source installer explicitly accepts macOS 15 and 26. This repository pins source revisions rather than assuming an unverified release-tag name. The final install package and its checksum/signature still need to be verified before a system install is added.
 
-## Current repository state
+## Installation blocker\n\nBefore adding any system-install step, resolve the SIP/AMFI requirements documented in [COMPATIBILITY-BLOCKERS.md](docs/COMPATIBILITY-BLOCKERS.md). The current WhateverXe setup must remain intact.\n\n## Current repository state
 
 This is the safe bootstrap stage:
 
