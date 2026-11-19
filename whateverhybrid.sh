@@ -39,14 +39,24 @@ preflight() {
   for c in sw_vers git curl shasum ditto; do need_cmd "$c"; done
   local version major
   version="$(sw_vers -productVersion)"; major="${version%%.*}"
-  [[ "$major" == 15 || "$major" == 26 ]] || stop "Stable NVIDIA target $WH_NVIDIA_STABLE_TAG supports macOS 15/26; detected $version."
+  [[ "$major" == 15 || "$major" == 26 ]] || stop "Pinned NVIDIA source targets macOS 15/26; detected $version."
   ok "macOS $version / x86_64"
   note "Existing customized WhateverXe is preserved."
   note "NMIntelFB and nmhybrid display-transfer modes remain disabled."
 }
 fetch_repo() {
   local repo="$1" destination="$2" ref="$3"
-  if [[ -e "$destination" ]]; then note "Keeping existing checkout: $destination"; return; fi
+  if [[ -e "$destination" ]]; then
+    [[ -d "$destination/.git" ]] || stop "Existing source path is not a Git checkout: $destination"
+    local current
+    current="$(git -C "$destination" rev-parse HEAD 2>/dev/null)" || stop "Cannot inspect existing checkout: $destination"
+    if [[ "$current" == "$ref" ]]; then note "Pinned checkout already present: $destination"; return; fi
+    [[ -z "$(git -C "$destination" status --porcelain)" ]] || stop "Existing checkout has local changes; refusing to overwrite: $destination"
+    note "Updating clean checkout to pinned revision $ref"
+    git -C "$destination" fetch --no-tags origin "$ref"
+    git -C "$destination" checkout --detach "$ref"
+    return
+  fi
   mkdir -p "$(dirname "$destination")"
   note "Fetching $repo ($ref)"
   git clone --filter=blob:none --no-checkout "https://github.com/$repo.git" "$destination"
