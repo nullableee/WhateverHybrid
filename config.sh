@@ -1,7 +1,8 @@
 #!/bin/bash
 WH_NVIDIA_UPSTREAM="nullmoth/nvidia-macos-driver"
 WH_NVIDIA_FORK="nullableee/nvidia-macos-driver"
-WH_NVIDIA_STABLE_REF="3d8ffab7fd737bc175089b0bc21900abf9f38bec"
+WH_NVIDIA_UPSTREAM_REF="87e524ab36f12d17c04626d6cf7fc3bde1cc63e"
+WH_NVIDIA_FORK_REF="b76d3df1da4bf2497c938c7d78ac221e307319b0"
 WH_WHATEVERXE_REPO="nullableee/WhateverXe"
 WH_WHATEVERXE_GRAPHICS_REPO="b00t0x/WhateverXe-Graphics"
 WH_WORKDIR_DEFAULT="${HOME}/Library/Caches/WhateverHybrid"
