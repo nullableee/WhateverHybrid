@@ -1,0 +1,10 @@
+# Copy to /Library/GPUBundles/nvmtl-gpu-policy.txt only after testing.
+# Keep this file root-owned and not writable by group or other users.
+# The separate nvmtl-allow.txt allow-list must also permit an application.
+#
+# Default policy: follow NSSupportsAutomaticGraphicsSwitching.
+mode apple
+#
+# Explicit per-process overrides (exact process names from the driver's logs):
+# nvidia RenderApp
+# igpu BrowserApp
