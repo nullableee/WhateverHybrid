@@ -1,0 +1,5 @@
+# Example allow-list for /Library/GPUBundles/nvmtl-allow.txt
+# Add only exact application process names after confirming them in NVMTL logs.
+# No wildcard is enabled by default.
+#
+# RenderApp
