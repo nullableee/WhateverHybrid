@@ -1,0 +1,10 @@
+#!/bin/bash
+WH_NVIDIA_UPSTREAM="nullmoth/nvidia-macos-driver"
+WH_NVIDIA_FORK="nullableee/nvidia-macos-driver"
+WH_NVIDIA_STABLE_TAG="v2.9"
+WH_WHATEVERXE_REPO="nullableee/WhateverXe"
+WH_WHATEVERXE_GRAPHICS_REPO="b00t0x/WhateverXe-Graphics"
+WH_WORKDIR_DEFAULT="${HOME}/Library/Caches/WhateverHybrid"
+WH_PRESERVE_EXISTING_WHATEVERXE=1
+WH_ENABLE_NMINTELFB=0
+WH_ENABLE_NMHYBRID=0
