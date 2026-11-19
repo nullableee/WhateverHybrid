@@ -55,13 +55,18 @@ fetch_repo() {
     [[ -z "$(git -C "$destination" status --porcelain)" ]] || stop "Existing checkout has local changes; refusing to overwrite: $destination"
     note "Updating clean checkout to pinned revision $ref"
     git -C "$destination" fetch --no-tags origin "$ref"
-    git -C "$destination" checkout --detach "$ref"
+    local target
+    target="$(git -C "$destination" rev-parse FETCH_HEAD)" || stop "Cannot resolve fetched revision: $ref"
+    git -C "$destination" checkout --detach "$target"
     return
   fi
   mkdir -p "$(dirname "$destination")"
   note "Fetching $repo ($ref)"
   git clone --filter=blob:none --no-checkout "https://github.com/$repo.git" "$destination"
-  git -C "$destination" checkout --detach "$ref"
+  git -C "$destination" fetch --no-tags origin "$ref"
+  local target
+  target="$(git -C "$destination" rev-parse FETCH_HEAD)" || stop "Cannot resolve fetched revision: $ref"
+  git -C "$destination" checkout --detach "$target"
 }
 fetch_sources() {
   preflight
