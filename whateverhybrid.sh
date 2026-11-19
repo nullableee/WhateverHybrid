@@ -72,7 +72,7 @@ fetch_sources() {
   note "No driver package installed; no boot settings changed."
 }
 show_status() {
-  printf 'NVIDIA stable target: %s (%s)\n' "$WH_NVIDIA_UPSTREAM" "$WH_NVIDIA_STABLE_TAG"
+  printf 'NVIDIA stable target: %s (%s)\n' "$WH_NVIDIA_UPSTREAM" "$WH_NVIDIA_UPSTREAM_REF"
   printf 'NVIDIA development fork: %s\n' "$WH_NVIDIA_FORK"
   printf 'WhateverXe: preserve installed customized build\n'
   printf 'NMIntelFB: disabled\nnmhybrid display transfer: disabled\n'
