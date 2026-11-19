@@ -63,6 +63,7 @@ This stage does not install kexts or change system configuration.
 chmod +x whateverhybrid.sh
 ./whateverhybrid.sh --check
 ./whateverhybrid.sh --fetch-sources
+./whateverhybrid.sh --test-driver
 ./whateverhybrid.sh --status
 ```
 
