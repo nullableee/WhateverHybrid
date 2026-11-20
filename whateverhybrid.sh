@@ -54,18 +54,24 @@ fetch_repo() {
     if [[ "$current" == "$ref" ]]; then note "Pinned checkout already present: $destination"; return; fi
     [[ -z "$(git -C "$destination" status --porcelain)" ]] || stop "Existing checkout has local changes; refusing to overwrite: $destination"
     note "Updating clean checkout to pinned revision $ref"
-    git -C "$destination" fetch --no-tags origin "$ref"
     local target
-    target="$(git -C "$destination" rev-parse FETCH_HEAD)" || stop "Cannot resolve fetched revision: $ref"
+    target="$(git -C "$destination" rev-parse --verify "${ref}^{commit}" 2>/dev/null || true)"
+    if [[ -z "$target" ]]; then
+      git -C "$destination" fetch --no-tags origin "$ref"
+      target="$(git -C "$destination" rev-parse FETCH_HEAD)" || stop "Cannot resolve fetched revision: $ref"
+    fi
     git -C "$destination" checkout --detach "$target"
     return
   fi
   mkdir -p "$(dirname "$destination")"
   note "Fetching $repo ($ref)"
   git clone --filter=blob:none --no-checkout "https://github.com/$repo.git" "$destination"
-  git -C "$destination" fetch --no-tags origin "$ref"
   local target
-  target="$(git -C "$destination" rev-parse FETCH_HEAD)" || stop "Cannot resolve fetched revision: $ref"
+  target="$(git -C "$destination" rev-parse --verify "${ref}^{commit}" 2>/dev/null || true)"
+  if [[ -z "$target" ]]; then
+    git -C "$destination" fetch --no-tags origin "$ref"
+    target="$(git -C "$destination" rev-parse FETCH_HEAD)" || stop "Cannot resolve fetched revision: $ref"
+  fi
   git -C "$destination" checkout --detach "$target"
 }
 fetch_test_baselines() {
