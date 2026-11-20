@@ -68,10 +68,20 @@ fetch_repo() {
   target="$(git -C "$destination" rev-parse FETCH_HEAD)" || stop "Cannot resolve fetched revision: $ref"
   git -C "$destination" checkout --detach "$target"
 }
+fetch_test_baselines() {
+  local checkout="$1" tag
+  for tag in v1.15.0 v2.8.1; do
+    if ! git -C "$checkout" show-ref --verify --quiet "refs/tags/$tag"; then
+      note "Fetching upstream test baseline tag $tag"
+      git -C "$checkout" fetch --no-tags "https://github.com/$WH_NVIDIA_UPSTREAM.git" "refs/tags/$tag:refs/tags/$tag"
+    fi
+  done
+}
 fetch_sources() {
   preflight
   mkdir -p "$WORKDIR/sources"
   fetch_repo "$WH_NVIDIA_FORK" "$WORKDIR/sources/nvidia-macos-driver-fork" "$WH_NVIDIA_FORK_REF"
+  fetch_test_baselines "$WORKDIR/sources/nvidia-macos-driver-fork"
   fetch_repo "$WH_NVIDIA_UPSTREAM" "$WORKDIR/sources/nvidia-macos-driver-upstream" "$WH_NVIDIA_UPSTREAM_REF"
   fetch_repo "$WH_VULKAN_HEADERS_REPO" "$WORKDIR/sources/Vulkan-Headers" "$WH_VULKAN_HEADERS_REF"
   fetch_repo "$WH_WHATEVERXE_REPO" "$WORKDIR/sources/WhateverXe" "main"
