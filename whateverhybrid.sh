@@ -15,6 +15,8 @@ Usage:
   ./whateverhybrid.sh --audit [--workdir PATH]
   ./whateverhybrid.sh --build-plugin [--workdir PATH]
   ./whateverhybrid.sh --stage-payload [--workdir PATH]
+  sudo ./whateverhybrid.sh --install [--workdir PATH]
+  sudo ./whateverhybrid.sh --uninstall
   ./whateverhybrid.sh --status [--workdir PATH]
   ./whateverhybrid.sh --help
 
@@ -24,10 +26,12 @@ Actions:
   --test-driver    Run the fork's 250+ host unit and regression tests.
   --audit          Read-only audit of iGPU, dGPU, EFI config, kexts, and SIP/AMFI.
   --build-plugin   Compile custom NVMTLDriver from fork with headless fused DMA.
-  --stage-payload  Fetch base package, inject fork plugin & policy, verify layout.
+  --stage-payload  Fetch base package, inject fork plugin & policy, stage firmware.
+  --install        Install staged driver into AuxKC (requires root: sudo).
+  --uninstall      Cleanly remove NVIDIA driver and restore previous state (sudo).
   --status         Print configured source pins and working paths.
 
-This utility is non-destructive and will not modify EFI, NVRAM, SIP, or system kexts.
+This utility preserves WhateverXe and never enables NMIntelFB or nmhybrid blitting.
 EOF
 }
 stop() { printf 'STOP: %s\n' "$*" >&2; exit 1; }
@@ -37,7 +41,7 @@ need_cmd() { command -v "$1" >/dev/null 2>&1 || stop "Required command not found
 parse_args() {
   while (($#)); do
     case "$1" in
-      --check|--fetch-sources|--test-driver|--audit|--build-plugin|--stage-payload|--status)
+      --check|--fetch-sources|--test-driver|--audit|--build-plugin|--stage-payload|--install|--uninstall|--status)
         [[ -z "$ACTION" ]] || stop "Choose exactly one action."; ACTION="$1" ;;
       --workdir) (($# >= 2)) || stop "--workdir requires a path."; WORKDIR="$2"; shift ;;
       --help|-h) usage; exit 0 ;;
@@ -198,6 +202,10 @@ if os.path.exists(oc_path):
         nv = pl.get("NVRAM", {}).get("Add", {}).get("7C436110-AB2A-4BBB-A880-FE41995C9F82", {})
         ba = nv.get("boot-args", "")
         print(f"[*] OpenCore boot-args: {ba}")
+        if "nvaccel=1" in ba:
+            print("    [ok] nvaccel=1 is present (accelerator safety arm enabled)")
+        else:
+            print("    [*] Tip: Add 'nvaccel=1' to boot-args to arm the accelerator in headless mode.")
         csr = nv.get("csr-active-config")
         if isinstance(csr, bytes):
             csr_val = int.from_bytes(csr, "little")
@@ -206,9 +214,6 @@ if os.path.exists(oc_path):
                 print("    [ok] Preserves all required WhateverXe SIP bits (0x0803)")
             if (csr_val & 0x0A43) == 0x0A43:
                 print("    [ok] Satisfies NVIDIA KextPolicy database write bits (0x0A43)")
-            else:
-                print("    [*] Note: NVIDIA package installer uses 0x0A43 for silent KextPolicy writes;")
-                print("        0x0A43 is a superset of 0x0803 and fully compatible with WhateverXe.")
     except Exception as e:
         print(f"[!] Error reading config.plist: {e}")
 else:
@@ -303,11 +308,62 @@ stage_payload() {
   cp "$ROOT/patches/nvmtl-allow.example" "$stagedir/pkgroot/Library/GPUBundles/nvmtl-allow.txt"
   chmod 644 "$stagedir/pkgroot/Library/GPUBundles/nvmtl-gpu-policy.txt" "$stagedir/pkgroot/Library/GPUBundles/nvmtl-allow.txt"
 
+  # Stage firmware if available
+  if [[ -d /tmp/nvfw_test && ! -d "$stagedir/pkgroot/Users/Shared/nvfw" ]]; then
+    note "Staging verified offline firmware"
+    mkdir -p "$stagedir/pkgroot/Users/Shared"
+    ditto /tmp/nvfw_test "$stagedir/pkgroot/Users/Shared/nvfw"
+  fi
+
   # Ensure NMIntelFB is not in the staged package
   rm -rf "$stagedir/pkgroot/Library/Extensions/NMIntelFB.kext" "$stagedir/pkgroot/Library/NullMoth/kexts/"*/NMIntelFB.kext 2>/dev/null || true
 
+  note "Refreshing SHA256SUMS for modified package files"
+  (
+    cd "$stagedir/pkgroot"
+    local files=(
+      Library/GPUBundles/NVMTLDriver.bundle/Contents/MacOS/NVMTLDriver
+      Library/GPUBundles/NVMTLDriver.bundle/Contents/_CodeSignature/CodeResources
+      Library/GPUBundles/nvmtl-gpu-policy.txt
+      Library/GPUBundles/nvmtl-allow.txt
+    )
+    if [[ -d Users/Shared/nvfw/nvidia/620.70.06 ]]; then
+      files+=(
+        Users/Shared/nvfw/nvidia/620.70.06/gsp_ga10x.bin
+        Users/Shared/nvfw/nvidia/620.70.06/gsp_tu10x.bin
+        Users/Shared/nvfw/nvidia/620.70.06/ucodes_ga10x.bin
+        Users/Shared/nvfw/nvidia/620.70.06/ucodes_tu10x.bin
+      )
+    fi
+    "$WORKDIR/sources/nvidia-macos-driver-fork/package/sums_refresh.sh" . "${files[@]}"
+    shasum -c SHA256SUMS >/dev/null
+    ./sums_complete.sh . >/dev/null
+  )
+  ok "Package integrity and checksums verified"
   ok "Payload staged under $stagedir"
-  note "Ready for review before any system installation."
+  note "Ready for system installation via: sudo ./whateverhybrid.sh --install"
+}
+install_driver() {
+  preflight
+  local stagedir="$WORKDIR/staged-payload/pkgroot"
+  [[ -f "$stagedir/install.sh" ]] || stop "Staged payload not found. Run ./whateverhybrid.sh --stage-payload first."
+  [[ "$EUID" -eq 0 ]] || stop "System installation requires root privileges. Please run:\nsudo ./whateverhybrid.sh --install"
+
+  note "Starting staged installation into AuxiliaryKernelExtensions.kc..."
+  "$stagedir/install.sh" --payload "$stagedir"
+  ok "Installation finished successfully! Restart your Mac to load the driver."
+}
+uninstall_driver() {
+  local stagedir="$WORKDIR/staged-payload/pkgroot"
+  if [[ -f "$stagedir/uninstall.sh" ]]; then
+    [[ "$EUID" -eq 0 ]] || stop "Driver uninstallation requires root privileges. Please run:\nsudo ./whateverhybrid.sh --uninstall"
+    "$stagedir/uninstall.sh"
+  elif [[ -f "/Library/NullMoth/uninstall.sh" ]]; then
+    [[ "$EUID" -eq 0 ]] || stop "Driver uninstallation requires root privileges. Please run:\nsudo /Library/NullMoth/uninstall.sh"
+    "/Library/NullMoth/uninstall.sh"
+  else
+    stop "No uninstaller found."
+  fi
 }
 show_status() {
   printf 'NVIDIA upstream baseline: %s (%s)\n' "$WH_NVIDIA_UPSTREAM" "$WH_NVIDIA_UPSTREAM_REF"
@@ -325,5 +381,7 @@ case "$ACTION" in
   --audit) audit_system ;;
   --build-plugin) build_plugin ;;
   --stage-payload) stage_payload ;;
+  --install) install_driver ;;
+  --uninstall) uninstall_driver ;;
   --status) show_status ;;
 esac
