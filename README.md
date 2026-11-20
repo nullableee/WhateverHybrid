@@ -33,7 +33,8 @@ This is distinct from nmhybrid=1..4 panel-transfer. WhateverHybrid does not enab
 ## Source pins
 
 - Upstream baseline: current 3.0 source snapshot at `87e524ab36f12d17c04626d6cf7fc3bde1cc63e`.
-- NVIDIA development fork: `b76d3df1da4bf2497c938c7d78ac221e307319b0`, which includes the headless+iGPU GPU-policy activation and desktop-process preference changes.
+- NVIDIA development fork: `47106fa930731389fc071988e7fe84c8506bf33a`, including the headless+iGPU GPU-policy activation, desktop-process preference changes and updated host-test assertions.
+- Vulkan-Headers: `d277a0a3cda9c682708c93279f0c72cd6b0ae3f3`, fetched only as a host-test build dependency.
 - WhateverXe: preserve the already-installed customized build; source checkout is for inspection only.
 
 The upstream 3.0 source installer explicitly accepts macOS 15 and 26. This repository pins source revisions rather than assuming an unverified release-tag name. The final install package and its checksum/signature still need to be verified before a system install is added.
@@ -56,6 +57,12 @@ This stage does not install kexts or change system configuration.
 4. Verify allow-list and per-process policy behavior: system UI stays on Intel; explicitly selected applications receive the RTX 4050 Metal device.
 5. Confirm package layout, signatures and checksums for macOS 26.
 6. Add a read-only hardware/provider audit, then a staged installer with backup, explicit confirmation, rollback and post-install verification.
+
+## Host-test prerequisites
+
+- Python 3.12 or newer and Xcode Command Line Tools.
+- `--fetch-sources` retrieves a pinned Vulkan-Headers checkout for tests that compile Vulkan-facing C fixtures.
+- The DLSS fixture additionally uses `zstd`; when it is not installed, that one test reports **SKIP** rather than a driver failure. Install it with `brew install zstd` to run that fixture.
 
 ## Usage
 
