@@ -73,6 +73,7 @@ fetch_sources() {
   mkdir -p "$WORKDIR/sources"
   fetch_repo "$WH_NVIDIA_FORK" "$WORKDIR/sources/nvidia-macos-driver-fork" "$WH_NVIDIA_FORK_REF"
   fetch_repo "$WH_NVIDIA_UPSTREAM" "$WORKDIR/sources/nvidia-macos-driver-upstream" "$WH_NVIDIA_UPSTREAM_REF"
+  fetch_repo "$WH_VULKAN_HEADERS_REPO" "$WORKDIR/sources/Vulkan-Headers" "$WH_VULKAN_HEADERS_REF"
   fetch_repo "$WH_WHATEVERXE_REPO" "$WORKDIR/sources/WhateverXe" "main"
   ok "Source checkouts prepared under $WORKDIR/sources"
   note "No driver package installed; no boot settings changed."
@@ -80,7 +81,17 @@ fetch_sources() {
 test_driver() {
   preflight
   local src="$WORKDIR/sources/nvidia-macos-driver-fork"
+  local vulkan="$WORKDIR/sources/Vulkan-Headers"
   [[ -f "$src/tools/run_all_tests.py" ]] || stop "Run --fetch-sources first."
+  [[ -f "$vulkan/include/vulkan/vulkan.h" ]] || stop "Pinned Vulkan-Headers are missing; run --fetch-sources first."
+  export VULKAN_HEADERS="$vulkan"
+  if [[ -z "${ZSTD:-}" ]]; then
+    local zstd_bin=""
+    zstd_bin="$(command -v zstd || true)"
+    [[ -n "$zstd_bin" ]] || { [[ -x /usr/local/bin/zstd ]] && zstd_bin=/usr/local/bin/zstd; }
+    [[ -n "$zstd_bin" ]] || { [[ -x /opt/homebrew/bin/zstd ]] && zstd_bin=/opt/homebrew/bin/zstd; }
+    [[ -z "$zstd_bin" ]] || export ZSTD="$zstd_bin"
+  fi
   need_cmd python3
   need_cmd xcode-select
   need_cmd clang
