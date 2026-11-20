@@ -51,7 +51,17 @@ fetch_repo() {
     [[ -d "$destination/.git" ]] || stop "Existing source path is not a Git checkout: $destination"
     local current
     current="$(git -C "$destination" rev-parse HEAD 2>/dev/null)" || stop "Cannot inspect existing checkout: $destination"
-    if [[ "$current" == "$ref" ]]; then note "Pinned checkout already present: $destination"; return; fi
+    if [[ "$current" == "$ref" ]]; then
+      local first_entry
+      first_entry="$(git -C "$destination" ls-tree --name-only HEAD | sed -n '1p')"
+      if [[ -n "$first_entry" && ! -e "$destination/$first_entry" ]]; then
+        note "Materializing pinned checkout: $destination"
+        git -C "$destination" checkout --detach "$current"
+      else
+        note "Pinned checkout already present: $destination"
+      fi
+      return
+    fi
     [[ -z "$(git -C "$destination" status --porcelain)" ]] || stop "Existing checkout has local changes; refusing to overwrite: $destination"
     note "Updating clean checkout to pinned revision $ref"
     local target
@@ -65,7 +75,7 @@ fetch_repo() {
   fi
   mkdir -p "$(dirname "$destination")"
   note "Fetching $repo ($ref)"
-  git clone --filter=blob:none --no-checkout "https://github.com/$repo.git" "$destination"
+  git clone --filter=blob:none "https://github.com/$repo.git" "$destination"
   local target
   target="$(git -C "$destination" rev-parse --verify "${ref}^{commit}" 2>/dev/null || true)"
   if [[ -z "$target" ]]; then
