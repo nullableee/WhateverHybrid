@@ -2,7 +2,7 @@
 WH_NVIDIA_UPSTREAM="nullmoth/nvidia-macos-driver"
 WH_NVIDIA_FORK="nullableee/nvidia-macos-driver"
 WH_NVIDIA_UPSTREAM_REF="87e524ab36f12d17c04626d6cf7fc3bde1cc63e"
-WH_NVIDIA_FORK_REF="6b47791bed3ce59ba3567e475f10fd59d21636ec"
+WH_NVIDIA_FORK_REF="12de75fb15ff9195cf6d8c01d0e45f11dd14aa5d"
 WH_VULKAN_HEADERS_REPO="KhronosGroup/Vulkan-Headers"
 WH_VULKAN_HEADERS_REF="d277a0a3cda9c682708c93279f0c72cd6b0ae3f3"
 WH_WHATEVERXE_REPO="nullableee/WhateverXe"
