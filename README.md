@@ -33,7 +33,7 @@ This is distinct from nmhybrid=1..4 panel-transfer. WhateverHybrid does not enab
 ## Source pins
 
 - Upstream baseline: current 3.0 source snapshot at `87e524ab36f12d17c04626d6cf7fc3bde1cc63e`.
-- NVIDIA development fork: `6b47791bed3ce59ba3567e475f10fd59d21636ec`, including the headless+iGPU GPU-policy activation, desktop-process preference changes and updated host-test assertions.
+- NVIDIA development fork: `12de75fb15ff9195cf6d8c01d0e45f11dd14aa5d`, including the headless+iGPU GPU-policy activation, desktop-process preference changes and updated host-test assertions.
 - Vulkan-Headers: `d277a0a3cda9c682708c93279f0c72cd6b0ae3f3`, fetched only as a host-test build dependency.
 - WhateverXe: preserve the already-installed customized build; source checkout is for inspection only.
 
