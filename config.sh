@@ -1,7 +1,7 @@
 #!/bin/bash
 WH_NVIDIA_UPSTREAM="nullmoth/nvidia-macos-driver"
 WH_NVIDIA_FORK="nullableee/nvidia-macos-driver"
-WH_NVIDIA_UPSTREAM_REF="87e524ab36f12d17c04626d6cf7fc3bde1cc63e"
+WH_NVIDIA_UPSTREAM_REF="87e524ab36f12d17c04626d6cf7fc3bde1cc63e4"
 WH_NVIDIA_FORK_REF="7ea07f66f17d6103cf09f708aae0bf6942537182"
 WH_VULKAN_HEADERS_REPO="KhronosGroup/Vulkan-Headers"
 WH_VULKAN_HEADERS_REF="d277a0a3cda9c682708c93279f0c72cd6b0ae3f3"
