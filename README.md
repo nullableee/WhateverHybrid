@@ -41,22 +41,27 @@ The upstream 3.0 source installer explicitly accepts macOS 15 and 26. This repos
 
 ## Installation blocker\n\nBefore adding any system-install step, resolve the SIP/AMFI requirements documented in [COMPATIBILITY-BLOCKERS.md](docs/COMPATIBILITY-BLOCKERS.md). The current WhateverXe setup must remain intact.\n\n## Current repository state
 
-This is the safe bootstrap stage:
+This stage provides safe preparation, audit, build, and payload staging:
 
 - `--check`: verifies host OS, architecture and required tools.
 - `--fetch-sources`: checks out the user's NVIDIA fork, the upstream baseline and WhateverXe source for inspection.
-- `--status`: prints the configured integration policy.
+- `--test-driver`: runs the driver test suite (244 passed, 0 failed).
+- `--audit`: read-only audit of iGPU, dGPU, OpenCore config, kexts, and SIP/AMFI compatibility.
+- `--build-plugin`: builds and codesigns the custom `NVMTLDriver` with fused headless IOSurface DMA readback.
+- `--stage-payload`: fetches base package, injects custom Metal plugin and headless policy, verifying layout.
+- `--status`: prints the configured integration policy and source pins.
 
 This stage does not install kexts or change system configuration.
 
-## Next implementation gates
+## Implementation progress
 
-1. Build the NVIDIA fork from the pinned source revision and run its host test suite.
-2. Verify the headless detector sets `debug.nvaccel_headless` when the NVIDIA GPU has no display head and the Intel framebuffer owns the desktop.
-3. Verify the fork's policy code activates when `debug.nvaccel_headless > 0`, with no `nmhybrid` boot argument.
-4. Verify allow-list and per-process policy behavior: system UI stays on Intel; explicitly selected applications receive the RTX 4050 Metal device.
-5. Confirm package layout, signatures and checksums for macOS 26.
-6. Add a read-only hardware/provider audit, then a staged installer with backup, explicit confirmation, rollback and post-install verification.
+1. [x] Run NVIDIA fork host test suite from pinned revision (`7ea07f6`) -> 244 passed, 0 failed.
+2. [x] Add read-only hardware/provider audit (`--audit`).
+3. [x] Implement reproducible Metal driver compiler (`--build-plugin`).
+4. [x] Implement safe payload stager (`--stage-payload`).
+5. [x] Analyze SIP/AMFI coexistence (AMFIAnchor + AMFIPass; 0x803 vs 0x0A43).
+6. [ ] Address hardware blocker: `disable-gpu = 1` in OpenCore `PciRoot(0x0)/Pci(0x1,0x0)/Pci(0x0,0x0)`.
+7. [ ] Verification of headless render offload and Metal device selection on live hardware.
 
 ## Host-test prerequisites
 
@@ -71,6 +76,9 @@ chmod +x whateverhybrid.sh
 ./whateverhybrid.sh --check
 ./whateverhybrid.sh --fetch-sources
 ./whateverhybrid.sh --test-driver
+./whateverhybrid.sh --audit
+./whateverhybrid.sh --build-plugin
+./whateverhybrid.sh --stage-payload
 ./whateverhybrid.sh --status
 ```
 
